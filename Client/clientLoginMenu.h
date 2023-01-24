@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "userInput.h"
+#include "../Auxiliary/userInput.h"
 
 void error(char *msg){
 	perror(msg);
@@ -150,7 +150,7 @@ int loginCurrentUser(int sockfd){
 }
 
 // Login Menu Driver
-void loginMenu(int sockfd){
+void clientLoginMenu(int sockfd){
 
 	char option;
 	int err;

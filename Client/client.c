@@ -7,7 +7,7 @@
 #include <strings.h>
 #include <string.h>
 #include <pthread.h>
-#include "loginMenu.h"
+#include "clientLoginMenu.h"
 
 //struct termios old;
 
@@ -49,7 +49,7 @@ int main(int argc,char *argv[]){
 	sizeof(serv_addr)) < 0) error("ERROR connecting");
 
 	//tcgetattr(STDIN_FILENO,&old);
-	loginMenu(sockfd);
+	clientLoginMenu(sockfd);
 
 	close(sockfd);
 
