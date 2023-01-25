@@ -1,7 +1,6 @@
 #ifndef LOGIN_MENU_SERVER_H
 #define LOGIN_MENU_SERVER_H
 
-/*
 #include <stdio.h>
 #include <stdlib.h> // exit()
 #include <sys/types.h>
@@ -12,12 +11,8 @@
 #include <strings.h> // bzero()
 #include <string.h>
 #include <pthread.h>
-*/
-
-void error(char *msg){
-	perror(msg);
-	exit(1);
-}
+#include "../Auxiliary/err_handle.h"
+#include "Server_Auxiliary/server_aux.h"
 
 // Append new new to txt file
 void appendNewUser(char username[],char password[]){
@@ -42,25 +37,6 @@ int breakToLoginMenu(int sockfd){
 		return 1;
 	}
 	return 0;
-}
-
-// Delete user from txt file givin the numerical line in the file
-void deleteUser(int x){
-	FILE *ptr = fopen("DATABASE.txt","r");
-	FILE *new_ptr = fopen("HOLD_DB.txt","a");
-	int i = 0;
-	char line[256];
-	bzero(line,sizeof(line));
-
-	while(fgets(line,sizeof(line),ptr)){
-		line[strcspn(line,"\n")] = '\0';
-		if(i != x) fprintf(new_ptr,"%s\n",line);
-		i++;
-	}
-	fclose(ptr);
-	fclose(new_ptr);
-	remove("DATABASE.txt");
-	rename("HOLD_DB.txt","DATABASE.txt");
 }
 
 // Read the login credentials from the client
@@ -147,15 +123,6 @@ void writeMssg(int sockfd,char mssg[],int size){
 	if(err < 0) error("ERROR: Writing to Socket\n");
 }
 
-// Read the option from the client
-char readUserOption(int sockfd){
-	int n;
-	char option;
-	n = read(sockfd,&option,sizeof(option));
-	if(n == 0) error("ERROR: Reading to Socket\n");
-	return option;
-}
-
 // bzero() the username, password, and mssg char arrays
 void bzeroUPM(char username[],char password[],char mssg[]){
 	bzero(username,11);
@@ -203,7 +170,10 @@ void serverCreateNewUser(int sockfd){
 }
 
 // Logins the client after reading in the username and password
-void serverCurrentUser(int sockfd){
+// Returns the line of the user within the file database
+// If returns -1 then the user exited
+int serverCurrentUser(int sockfd){
+	int line = -1;
 	int statusCode = 0;
 	char mssg[30];
 	char username[11];
@@ -233,11 +203,17 @@ void serverCurrentUser(int sockfd){
 		writeNumMssgChars(sockfd,strlen(mssg));
 		writeMssg(sockfd,mssg,strlen(mssg));	
 		writeStatusCode(sockfd,statusCode);
+		if(statusCode == 2){
+			line = searchUsername(username);
+		}
 	}
+	return line;
 }
 
 // Server Driver function for the initial login menu
-void serverLoginMenu(int sockfd){
+// Returns the line of the user within the file of the server
+int serverLoginMenu(int sockfd){
+	int line;
 	char option;
 	while(1){
 		option = readUserOption(sockfd);
@@ -247,15 +223,14 @@ void serverLoginMenu(int sockfd){
 			serverCreateNewUser(sockfd);	
 		}
 		else if(option == '2'){
-			serverCurrentUser(sockfd);	
+			line = serverCurrentUser(sockfd);
+			if(line > -1)
+				break;
 		}
 	}
-
+	return line;
 }
 
 #endif
-
-
-
 
 

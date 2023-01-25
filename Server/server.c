@@ -8,7 +8,7 @@
 #include <strings.h> // bzero()
 #include <string.h>
 #include <pthread.h>
-#include "serverLoginMenu.h"
+#include "serverCRDriver.h"
 
 int main(int argc, char *argv[]){
 	
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
 	newsockfd = accept(sockfd, 
 	(struct sockaddr *) &cli_addr, &clilen);
 	if(newsockfd < 0) error("ERROR on accept");
-	serverLoginMenu(newsockfd);
+	serverDriver(newsockfd);
 	close(sockfd);
 	
 	return 0;
