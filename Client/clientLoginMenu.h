@@ -4,12 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "userInput.h"
-
-void error(char *msg){
-	perror(msg);
-	exit(0);
-}
+#include "../Auxiliary/err_handle.h"
+#include "Client_Auxiliary/userInput.h"
 
 // Gets the login option from the client and send the option chosen to the
 // server.
@@ -106,8 +102,8 @@ void createNewUser(int sockfd){
 		numMssgChars = readNumMssgChars(sockfd);
 		readMssg(sockfd,mssg,numMssgChars);	
 		newUserCreated = readStatusCode(sockfd);
-		printf("%s\n",mssg);
 		system("clear");
+		printf("%s\n",mssg);
 	}	
 }
 
@@ -144,17 +140,18 @@ int loginCurrentUser(int sockfd){
 		numMssgChars = readNumMssgChars(sockfd);
 		readMssg(sockfd,mssg,numMssgChars);
 		loginCode = readStatusCode(sockfd);
+		system("clear");
 		printf("%s\n",mssg);
 	}		
 	return loginCode;
 }
 
 // Login Menu Driver
-void loginMenu(int sockfd){
-
+void clientLoginMenu(int sockfd){
 	char option;
 	int err;
 	int loginStatus;
+
 	system("clear");
 	while(1){
 		option = getLoginMenuOption(sockfd);
@@ -164,7 +161,10 @@ void loginMenu(int sockfd){
 			system("clear");
 		}
 		else if(option == '2'){
-			loginCurrentUser(sockfd);
+			if(loginCurrentUser(sockfd) > 1){
+				system("clear");
+				break;
+			}
 			system("clear");
 		}
 		else{

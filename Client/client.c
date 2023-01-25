@@ -7,9 +7,7 @@
 #include <strings.h>
 #include <string.h>
 #include <pthread.h>
-#include "loginMenu.h"
-
-//struct termios old;
+#include "clientCRDriver.h"
 
 int main(int argc,char *argv[]){
 
@@ -48,9 +46,7 @@ int main(int argc,char *argv[]){
 	if(connect(sockfd,(struct sockaddr *) &serv_addr, 
 	sizeof(serv_addr)) < 0) error("ERROR connecting");
 
-	//tcgetattr(STDIN_FILENO,&old);
-	loginMenu(sockfd);
-
+	client_driver(sockfd);
 	close(sockfd);
 
 	return 0;

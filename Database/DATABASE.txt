@@ -1,6 +1,0 @@
-user1	1234
-user2	4567
-user3	8901
-
-testun0 1234
-user7 1234
