@@ -3,7 +3,48 @@
 
 #include <stdio.h>
 #include <strings.h>
+#include <unistd.h>
+#include <pthread.h>
 #include "Server_Auxiliary/server_aux.h"
+
+extern int users_count;
+extern int users[100];
+
+void readMessage(int sockfd,char mssg[],int size){
+	int err;
+	err = read(sockfd,mssg,size);
+	if(err == 0) error("ERROR: Reading from Socket\n");
+}
+
+void writeMssgAllClients(int sockfd,char mssg[],int size){
+	int n;
+	printf("user count: %d\n",users_count);
+	for(int i = 0;i < users_count;i++){
+		if(users[i] != sockfd){
+			printf("here\n");
+			n = write(users[i],mssg,size);
+			if(n < 0) error("ERROR: Writing to Socket\n");
+		}
+	}
+}
+
+void realTimeChat(int sockfd){
+	int err;
+	char mssg[256];	
+	while(1){
+
+		// Break if client pressed ESC
+		if(breakToLoginMenu(sockfd) == 1){
+			break;
+		}
+
+		// read() and write() the message from the client back to 
+		// the client.
+		readMessage(sockfd,mssg,sizeof(mssg));
+		writeMssgAllClients(sockfd,mssg,sizeof(mssg));
+		printf("%s\n",mssg);
+	}
+}
 
 // Delete user from txt file givin the numerical line in the file
 void deleteFileLine(int x){
@@ -41,11 +82,14 @@ void serverInnerMenu(int sockfd,int line){
 	while(!logout){
 		option = readUserOption(sockfd);	
 		printf("IM Option: %c\n",option);
-		
+	
 		if(option == '1'){
-			logout = 1;
+			realTimeChat(sockfd);	
 		}
 		else if(option == '2'){
+			logout = 1;
+		}
+		else if(option == '3'){
 			deleteFileLine(line);
 			logout = 1;
 		}

@@ -24,21 +24,6 @@ void appendNewUser(char username[],char password[]){
 	fclose(ptr);
 }
 
-// Return 0 if ENTER pressed, Return 1 if ESC pressed
-int breakToLoginMenu(int sockfd){
-	int err;
-	int esc;
-	// Read if user pressed ESC
-	err = read(sockfd,&esc,sizeof(esc));
-	if(err == 1) error("ERROR: Reading to "
-	"Socket\n");
-	if(esc == 0){
-		printf("RETURN TO LOGIN MENU\n");
-		return 1;
-	}
-	return 0;
-}
-
 // Read the login credentials from the client
 void readLogin(int sockfd,char username[],char password[]){
 	int n;
@@ -151,7 +136,6 @@ void serverCreateNewUser(int sockfd){
 
 		// Search line of user in database
 		line = searchUsername(username);	
-		printf("here\n");
 		// Append new profile to database
 		if(line == -1){
 			statusCode = 1;
@@ -160,7 +144,6 @@ void serverCreateNewUser(int sockfd){
 	
 		// Get err message from table
 		errMssgTableNewUser(line,mssg);	
-		printf("STRLEN: %lu\n",strlen(mssg));
 
 		// Write message and status code
 		writeNumMssgChars(sockfd,strlen(mssg));
@@ -217,7 +200,7 @@ int serverLoginMenu(int sockfd){
 	char option;
 	while(1){
 		option = readUserOption(sockfd);
-		printf("Option: %c\n",option);
+		printf("Option: %c\n %d\n",option,option);
 		
 		if(option == '1'){
 			serverCreateNewUser(sockfd);	

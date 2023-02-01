@@ -24,10 +24,10 @@ char getLoginMenuOption(int sockfd){
 // Return 0 if ESC is pressed. Return 1 if successfull GET
 int getUserProfile(char username[],char password[]){
 	printf("Username: ");
-	if(getString(username,11,0) == 0)	
+	if(getString(username,11,0,0) == 0)	
 		return 0;
 	printf("\nPassword: ");
-	if(getString(password,11,1) == 0)
+	if(getString(password,11,1,0) == 0)
 		return 0;
 	printf("\n");
 	return 1;

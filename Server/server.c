@@ -10,6 +10,9 @@
 #include <pthread.h>
 #include "serverCRDriver.h"
 
+int users_count = 0;
+int users[100] = {};
+
 int main(int argc, char *argv[]){
 	
 	int sockfd;
@@ -39,11 +42,17 @@ int main(int argc, char *argv[]){
 		error("ERROR on binding");
 	
 	listen(sockfd,5);
-	clilen = sizeof(cli_addr);
-	newsockfd = accept(sockfd, 
-	(struct sockaddr *) &cli_addr, &clilen);
-	if(newsockfd < 0) error("ERROR on accept");
-	serverDriver(newsockfd);
+
+	while(1){
+		clilen = sizeof(cli_addr);
+		newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,
+		&clilen);
+		if(newsockfd < 0) error("ERROR: On accept\n");
+		users[users_count] = newsockfd;
+		users_count++;
+		pthread_create(&tid,NULL,serverDriver, 
+		(void *)(long) newsockfd);
+	}
 	close(sockfd);
 	
 	return 0;
