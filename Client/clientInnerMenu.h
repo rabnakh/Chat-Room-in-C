@@ -1,8 +1,10 @@
 #ifndef CLIENT_INNER_MENU_H
 #define CLIENT_INNER_MENU_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "../Auxiliary/err_handle.h"
 #include "Client_Auxiliary/userInput.h"
 
@@ -10,14 +12,73 @@
 char getInnerMenuOption(){
 	int err;
 	char option;
-	printf("1 - Logout\n");
-	printf("2 - Delete Account\n");
+	printf("1 - Chat Room\n");
+	printf("2 - Logout\n");
+	printf("3 - Delete Account\n");
 	option = getSingleChar();	
 	return option;
 }
 
+void readRTMssg(void *arg){
+	int n;
+	char mssg[256];
+	int sockfd = (long) arg;
+	while(1){
+		bzero(mssg,sizeof(mssg));
+		n = read(sockfd,mssg,sizeof(mssg));		
+		if(n == 0) error("ERROR: Reading from Socket\n");	
+		printf("\r%s\n",mssg);
+		printf("\r> ");
+		fflush(stdout);
+	}
+}
+
+void writeRTMssg(void *arg){
+	int n;
+	int err;
+	int getResult;
+	int sockfd = (long) arg;
+	char mssg[256];
+	while(1){
+		printf("\r> ");
+		fflush(stdout);	
+		bzero(mssg,sizeof(mssg));
+		getResult = getString(mssg,sizeof(mssg),0,1);
+		printf("\n");
+		// Write the breakStatus to the server
+		err = write(sockfd,&getResult,
+		sizeof(getResult));
+		if(err < 0) error("ERROR: Writing to Socket\n");
+		if(getResult == 0) break;
+
+		// Write the message to the server
+		err = write(sockfd,mssg,sizeof(mssg));	
+		if(err < 0) error("ERROR: Writing to Socket\n");
+	}
+}
+
+
+void realTimeChat(int sockfd,char option){
+	int err;
+	err = write(sockfd,&option,sizeof(option));
+	if(err < 0) error("ERROR: Writing to Socket\n");
+	system("clear");
+
+	printf("WELCOME TO THE CHATROOM\n");
+	pthread_t read_msg_thread;
+	pthread_t write_msg_thread;
+	pthread_create(&read_msg_thread,NULL,(void *) readRTMssg,
+	(void *)(long) sockfd);
+	pthread_create(&write_msg_thread,NULL,(void *) writeRTMssg,
+	(void *)(long) sockfd);
+	while(1);
+	close(read_msg_thread);
+	close(write_msg_thread);
+	printf("RTC Threads Closed\n");
+}
+
 // Logouts the user from their account
-int logoutAccount(int sockfd,int option){
+int logoutAccount(int sockfd,char option){
 	int err;
 	int logout_status;
 	int breakout = 0;
@@ -80,11 +141,16 @@ void clientInnerMenu(int sockfd){
 	while(1){
 		option = getInnerMenuOption(sockfd);
 		system("clear");
+
 		if(option == '1'){
-			if(logoutAccount(sockfd,option) == 1) break;
+			realTimeChat(sockfd,option);
 			system("clear");
 		}
 		else if(option == '2'){
+			if(logoutAccount(sockfd,option) == 1) break;
+			system("clear");
+		}
+		else if(option == '3'){
 			if(deleteAccount(sockfd,option) == 1) break;
 			system("clear");
 		}

@@ -40,7 +40,7 @@ char getSingleChar(){
 }
 
 // Returns 0 if exit with escape and returns 1 if exit with newline
-int getString(char string[],int size,int noEcho){
+int getString(char string[],int size,int noEcho,int extra){
 	char c;
 	struct termios old;
 	struct termios new;
@@ -68,13 +68,19 @@ int getString(char string[],int size,int noEcho){
 			if(noEcho == 0) printf("\b \b");
 			string[--i] = '\0';
 		}
-		else if((i < size - 1) && ((47 < c && c < 58) ||  
+		else if(i < size - 1){
+			if((extra == 0) && ((47 < c && c < 58) ||  
 			(64 < c && c < 91) || (96 < c && c < 123))){
-			string[i++] = c;
-			if(noEcho == 0) printf("%c",c);
+				string[i++] = c;
+				if(noEcho == 0) printf("%c",c);
+			}
+			else if((extra == 1) && (31 < c && c < 127)){
+				string[i++] = c;
+				if(noEcho == 0) printf("%c",c);
+			}
 		}
 	}
-	string[size - 1] = '\0';
+	string[i + 1] = '\0';
 	tcsetattr(STDIN_FILENO,TCSANOW,&old);
 
 	return exitInput;
