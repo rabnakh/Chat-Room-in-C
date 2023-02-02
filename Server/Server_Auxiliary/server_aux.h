@@ -5,11 +5,15 @@
 #include <unistd.h>
 #include "../../Auxiliary/err_handle.h"
 
+// Return 0 if client CTRL-C
 char readUserOption(int sockfd){
 	int n;
 	char option;
 	n = read(sockfd,&option,sizeof(option));
-	if(n == 0) error("ERROR: Reading to Socket\n");
+	if(n == 0){
+		perror("ERROR: Reading from Socket\n");
+		return '0';
+	}
 	return option;
 }
 

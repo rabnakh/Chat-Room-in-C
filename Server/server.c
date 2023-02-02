@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include "serverCRDriver.h"
 
-int users_count = 0;
+int usersCount = 0;
 int users[100] = {};
 
 int main(int argc, char *argv[]){
@@ -48,8 +48,8 @@ int main(int argc, char *argv[]){
 		newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,
 		&clilen);
 		if(newsockfd < 0) error("ERROR: On accept\n");
-		users[users_count] = newsockfd;
-		users_count++;
+		users[usersCount] = newsockfd;
+		usersCount++;
 		pthread_create(&tid,NULL,serverDriver, 
 		(void *)(long) newsockfd);
 	}

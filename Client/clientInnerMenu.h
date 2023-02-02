@@ -77,41 +77,6 @@ void realTimeChat(int sockfd,char option){
 	printf("RTC Threads Closed\n");
 }
 
-/*
-void readTimeChat(int sockfd,char option){
-	int err;
-	int getStringResult;
-	char mssg[256];	
-	
-	err = write(sockfd,&option,sizeof(option));
-	if(err < 0) error("ERROR: Writing to Socket\n");
-	system("clear");
-	
-	while(1){
-		printf("> ");
-
-		// Get the message from the client and write the status to
-		// the server.
-		getStringResult = getString(mssg,sizeof(mssg),0);
-		printf("HERE\n");
-		err = write(sockfd,&getStringResult,
-		sizeof(getStringResult));
-		printf("%d\n",getStringResult);
-		if(err < 0) error("ERROR: Writing to Socket\n");
-		if(getStringResult == 0){
-			printf("here\n");
-			break;
-		}
-
-		// Write the message to the server
-		err = write(sockfd,mssg,sizeof(mssg));	
-		if(err < 0) error("ERROR: Writing to Socket\n");
-		err = read(sockfd,mssg,sizeof(mssg));
-		printf("Entered Mssg: %s\n",mssg);
-	}
-}
-*/
-
 // Logouts the user from their account
 int logoutAccount(int sockfd,char option){
 	int err;

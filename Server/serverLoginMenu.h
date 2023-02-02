@@ -25,14 +25,22 @@ void appendNewUser(char username[],char password[]){
 }
 
 // Read the login credentials from the client
-void readLogin(int sockfd,char username[],char password[]){
+// Returns 1 is client CTRL-C
+// Else returns 0
+int readLogin(int sockfd,char username[],char password[]){
 	int n;
 	n = read(sockfd,username,11);		
-	if(n == 0) error("ERROR reading from socket");
+	if(n == 0){
+		perror("ERROR: Reading from Socket\n");
+		return 1;		
+	}
 	n = read(sockfd,password,11);
-	if(n == 0) error("ERROR reading from socket");
-	
+	if(n == 0){
+		perror("ERROR: Reading from Socket\n");
+		return 1;
+	}	
 	printf("READ LOGIN INFO: %s %s\n",username,password);
+	return 0;
 }
 
 // Search full profile with username and password, and returns search code
@@ -116,9 +124,13 @@ void bzeroUPM(char username[],char password[],char mssg[]){
 }
 
 // Creates a new user profile
-void serverCreateNewUser(int sockfd){
+// Returns 1 is user pressed ctrl-c
+// Returns 0 if user exited normally
+int serverCreateNewUser(int sockfd){
 	int line = 0;
 	int statusCode = 0;
+	int termCode = 0;;
+	int breakCode;
 	char mssg[30];
 	char username[11];
 	char password[11];
@@ -126,16 +138,24 @@ void serverCreateNewUser(int sockfd){
 
 		// bzero() the char arrays
 		bzeroUPM(username,password,mssg);
-
-		// Break if client pressed ESC
-		if(breakToLoginMenu(sockfd) == 1)
+	
+		breakCode = breakToLoginMenu(sockfd);
+		if(breakCode == 1) break;
+		if(breakCode == -1){
+			termCode = 1;
 			break;
+		}
 
 		// Read login information
-		readLogin(sockfd,username,password);
+		breakCode = readLogin(sockfd,username,password);
+		if(breakCode == 1){
+			termCode = 1;
+			break;
+		}
 
 		// Search line of user in database
 		line = searchUsername(username);	
+
 		// Append new profile to database
 		if(line == -1){
 			statusCode = 1;
@@ -150,14 +170,17 @@ void serverCreateNewUser(int sockfd){
 		writeMssg(sockfd,mssg,strlen(mssg));
 		writeStatusCode(sockfd,statusCode);
 	}
+	return termCode;
 }
 
 // Logins the client after reading in the username and password
 // Returns the line of the user within the file database
-// If returns -1 then the user exited
+// If returns -1 then the user ESC
+// If returns -2 then the user CTRL-C
 int serverCurrentUser(int sockfd){
 	int line = -1;
 	int statusCode = 0;
+	int breakCode;
 	char mssg[30];
 	char username[11];
 	char password[11];
@@ -165,11 +188,14 @@ int serverCurrentUser(int sockfd){
 
 		// bzero() the char arrays
 		bzeroUPM(username,password,mssg);
-
-		// Break if client pressed ESC
-		if(breakToLoginMenu(sockfd) == 1)
+		
+		breakCode = breakToLoginMenu(sockfd);
+		if(breakCode == 1) break;
+		if(breakCode == -1){
+			line = -2;
 			break;
-
+		}
+		
 		// Read login information
 		readLogin(sockfd,username,password);
 		
@@ -195,20 +221,33 @@ int serverCurrentUser(int sockfd){
 
 // Server Driver function for the initial login menu
 // Returns the line of the user within the file of the server
+// Returns -1 if user CTRL-C
+// Otherwise it returns the line of the logined user
 int serverLoginMenu(int sockfd){
 	int line;
+	int newUserCode;
 	char option;
 	while(1){
 		option = readUserOption(sockfd);
 		printf("Option: %c\n %d\n",option,option);
+		if(option == '0'){
+			line = -1;
+			break;
+		}
 		
 		if(option == '1'){
-			serverCreateNewUser(sockfd);	
+			line = serverCreateNewUser(sockfd);	
+			if(line == 1){
+				line = -1;
+			}
 		}
 		else if(option == '2'){
 			line = serverCurrentUser(sockfd);
-			if(line > -1)
+			if(line > -1) break;
+			if(line == -2){
+				line = -1;
 				break;
+			}
 		}
 	}
 	return line;
