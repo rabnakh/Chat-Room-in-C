@@ -7,11 +7,15 @@
 #include <strings.h>
 #include <string.h>
 #include <pthread.h>
+#include <termios.h>
 #include "clientCRDriver.h"
+
+int sockfd;
+struct termios initial;
 
 int main(int argc,char *argv[]){
 
-	int sockfd;
+	//int sockfd;
 	int portno;
 	int n;
 	char buffer[256];
@@ -46,7 +50,9 @@ int main(int argc,char *argv[]){
 	if(connect(sockfd,(struct sockaddr *) &serv_addr, 
 	sizeof(serv_addr)) < 0) error("ERROR connecting");
 
-	client_driver(sockfd);
+	tcgetattr(STDIN_FILENO,&initial);
+	client_driver(/*sockfd*/);
+	printf("SOCKET CLOSED\n");
 	close(sockfd);
 
 	return 0;

@@ -5,6 +5,7 @@
 #include "serverInnerMenu.h"
 
 void removeClientSocket(int sockfd){
+	printf("Removing socket: %d\n",sockfd);
 	int clientIndex = 0;
 	while(users[clientIndex] != sockfd){
 		clientIndex++;

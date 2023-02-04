@@ -2,15 +2,17 @@
 #define TERMIOSTRING_H
 #include <termios.h>
 
+extern struct termios initial;
+
 // Only allows a single character to be inputed into the buffer
 char getSingleChar(){
 	char option;
 	char buffer;
-	struct termios old;
+	//struct termios old;
 	struct termios new;
 
-	tcgetattr(STDIN_FILENO,&old);
-	new = old;
+	//tcgetattr(STDIN_FILENO,&old);
+	new = initial;
 	new.c_lflag &= ~ICANON;
 	new.c_lflag &= ~ECHO;
 	tcsetattr(STDIN_FILENO,TCSANOW,&new);
@@ -34,7 +36,7 @@ char getSingleChar(){
 		}
 	}
 
-	tcsetattr(STDIN_FILENO,TCSANOW,&old);
+	tcsetattr(STDIN_FILENO,TCSANOW,&initial);
 
 	return option;
 }
@@ -42,12 +44,12 @@ char getSingleChar(){
 // Returns 0 if exit with escape and returns 1 if exit with newline
 int getString(char string[],int size,int noEcho,int extra){
 	char c;
-	struct termios old;
+	//struct termios old;
 	struct termios new;
 
 	bzero(string,size);
-	tcgetattr(STDIN_FILENO,&old);
-	new = old;
+	//tcgetattr(STDIN_FILENO,&old);
+	new = initial;
 	new.c_lflag &= ~ICANON;
 	new.c_lflag &= ~ECHO;
 	tcsetattr(STDIN_FILENO,TCSANOW,&new);
@@ -81,7 +83,7 @@ int getString(char string[],int size,int noEcho,int extra){
 		}
 	}
 	string[i + 1] = '\0';
-	tcsetattr(STDIN_FILENO,TCSANOW,&old);
+	tcsetattr(STDIN_FILENO,TCSANOW,&initial);
 
 	return exitInput;
 }

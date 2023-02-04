@@ -7,9 +7,11 @@
 #include "../Auxiliary/err_handle.h"
 #include "Client_Auxiliary/userInput.h"
 
+extern int sockfd;
+
 // Gets the login option from the client and send the option chosen to the
 // server.
-char getLoginMenuOption(int sockfd){
+char getLoginMenuOption(/*int sockfd*/){
 	int err;
 	char option;
 	printf("1 - New User\n");
@@ -35,7 +37,7 @@ int getUserProfile(char username[],char password[]){
 
 // Write the user profile to the server so that the server can search 
 // for its existance in the database.
-void writeLogin(int sockfd,char username[],char password[]){
+void writeLogin(/*int sockfd,*/char username[],char password[]){
 	int err;	
 	err = write(sockfd,username,11);
 	if(err < 0) error("ERROR writing to socket");
@@ -44,7 +46,7 @@ void writeLogin(int sockfd,char username[],char password[]){
 }
 
 // Reads the number of characters to read for the error message
-int readNumMssgChars(int sockfd){
+int readNumMssgChars(/*int sockfd*/){
 	int err;
 	int numChars;
 	err = read(sockfd,&numChars,sizeof(int));
@@ -53,14 +55,14 @@ int readNumMssgChars(int sockfd){
 }
 
 // Read the error message from server
-void readMssg(int sockfd,char mssg[],int numChar){
+void readMssg(/*int sockfd,*/char mssg[],int numChar){
 	int err;
 	err = read(sockfd,mssg,numChar);
 	if(err == 0) error("ERROR reading from socket");
 }
 
 // Read the status code from the server for user creation or login
-int readStatusCode(int sockfd){
+int readStatusCode(/*int sockfd*/){
 	int err;
 	int code;
 	err = read(sockfd,&code,sizeof(code));
@@ -69,7 +71,7 @@ int readStatusCode(int sockfd){
 }
 
 // Function to create a new user account
-void createNewUser(int sockfd){
+void createNewUser(/*int sockfd*/){
 	int numMssgChars = 0;
 	int newUserCreated = 0;
 	char username[11];
@@ -96,19 +98,19 @@ void createNewUser(int sockfd){
 		}
 
 		// Write new user profile information
-		writeLogin(sockfd,username,password);
+		writeLogin(/*sockfd,*/username,password);
 		
 		// Read message and status code 	
-		numMssgChars = readNumMssgChars(sockfd);
-		readMssg(sockfd,mssg,numMssgChars);	
-		newUserCreated = readStatusCode(sockfd);
+		numMssgChars = readNumMssgChars(/*sockfd*/);
+		readMssg(/*sockfd,*/mssg,numMssgChars);	
+		newUserCreated = readStatusCode(/*sockfd*/);
 		system("clear");
 		printf("%s\n",mssg);
 	}	
 }
 
 // Return 0 if pressed ESC. Return 1 if login successful
-int loginCurrentUser(int sockfd){
+int loginCurrentUser(/*int sockfd*/){
 	int loginCode = 0;
 	int numMssgChars;
 	char username[11];
@@ -134,12 +136,12 @@ int loginCurrentUser(int sockfd){
 		}
 
 		// Write login info to server
-		writeLogin(sockfd,username,password);
+		writeLogin(/*sockfd,*/username,password);
 
 		// Read message and status code
-		numMssgChars = readNumMssgChars(sockfd);
-		readMssg(sockfd,mssg,numMssgChars);
-		loginCode = readStatusCode(sockfd);
+		numMssgChars = readNumMssgChars(/*sockfd*/);
+		readMssg(/*sockfd,*/mssg,numMssgChars);
+		loginCode = readStatusCode(/*sockfd*/);
 		system("clear");
 		printf("%s\n",mssg);
 	}		
@@ -147,21 +149,21 @@ int loginCurrentUser(int sockfd){
 }
 
 // Login Menu Driver
-void clientLoginMenu(int sockfd){
+void clientLoginMenu(/*int sockfd*/){
 	char option;
 	int err;
 	int loginStatus;
 
 	system("clear");
 	while(1){
-		option = getLoginMenuOption(sockfd);
+		option = getLoginMenuOption(/*sockfd*/);
 		system("clear");
 		if(option == '1'){
-			createNewUser(sockfd);	
+			createNewUser(/*sockfd*/);	
 			system("clear");
 		}
 		else if(option == '2'){
-			if(loginCurrentUser(sockfd) > 1){
+			if(loginCurrentUser(/*sockfd*/) > 1){
 				system("clear");
 				break;
 			}
