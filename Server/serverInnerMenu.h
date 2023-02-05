@@ -21,6 +21,12 @@ int readMessage(int sockfd,char mssg[],int size){
 	return 0;
 }
 
+void writeMssgSingleClient(int recSockfd,char mssg[],int size){
+	int n;
+	n = write(recSockfd,mssg,size);
+	if(n < 0) perror("ERROR: Writing to Socket: %d\n",recSockfd);
+}
+
 void writeMssgAllClients(int sockfd,char mssg[],int size){
 	int n;
 	printf("user count: %d\n",usersCount);
@@ -65,6 +71,12 @@ int realTimeChat(int sockfd){
 		printf("%s\n",mssg);
 	}
 	return termCode;
+}
+
+// Return 0 if ESC
+// Return 1 if CTRL-C
+int directMssg(int sockfd){
+	int 	
 }
 
 // Delete user from txt file givin the numerical line in the file
@@ -115,9 +127,12 @@ int serverInnerMenu(int sockfd,int line){
 			if(termCode == 1) break;
 		}
 		else if(option == '2'){
-			logout = 1;
+			
 		}
 		else if(option == '3'){
+			logout = 1;
+		}
+		else if(option == '4'){
 			deleteFileLine(line);
 			logout = 1;
 		}

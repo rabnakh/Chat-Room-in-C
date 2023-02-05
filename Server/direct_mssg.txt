@@ -1,0 +1,71 @@
+
+SENDING FRIEND REQUEST:
+Prompt user to enter the name of a user to send friend request
+Search and repeat if the user is not existant
+If the user is found then send the request to the user
+Write the name of the REQUESTER to a file of user friend requests
+Print "successfull request sent"; print any char to continue
+Clear the terminal and prompt again
+
+ACCEPT FRIEND REQUEST:
+Read from the file of the friend requesters
+Print on the terminal
+Prompt user to enter the number of the request
+Error handling for invalid options
+Read the user requester from the file
+Save the username in a char array
+Delete from the requester file
+Write to the friends list file
+Clear the screen and update the list from the file
+
+PRIVATE MESSAGING:
+Read from the file of friends
+Print the list of the friend from the friends file
+Prompt the user for the number of the friend
+Error handling for invalid option
+Open the chat and prompt for message
+	There are two options by which to send the message to the friend. 
+	The message in both will still need to be written to a file. But 
+	the method to send it to the friend is different.
+	
+	FIRST METHOD:
+	Write the message to the chat log file
+	Then the friend will read from the file whenever there is a change 
+	in the number of bytes
+	Print the message to the terminal			
+
+	SECOND METHOD:
+	When the friend or any user logs in, their username is stored in a 
+	map/hash-table data structure.
+	Write the message to the chat log file
+	Search the hashtable with the username; it will store its sockfd
+	If it exists then write it to the friend
+	(Note: The logged in hashtable will store a struct that will 
+	contain the username and the sockfd)
+
+	CHOSEN OPTION:
+	The second method will be chosen since if it is the most robust. 
+	More problems and difficulties will result from the first option.
+	Probably instead of a hashtable, just use the array that holds the 
+	sockfds, but instead of only the sockfd id, store structs that 
+	hold the username, sockfd, and logged status. When writing to an 
+	individual one then search it username and check the logged status, 
+	and write to the sockfd in the struct within that index.
+	(Note: To accomidate for race conditions, a lock will be needed for 
+	concurrency when accessing the array)
+
+
+CONCURRENCY:
+What if the socket of the friend is created when they log in, and then 
+before they can print all the stored messages, the sender writes a message 
+and so the first message is printed, and thus be out of order?
+Answer: The friend reads and prints from the file first, then after it 
+moves down the logic and reads from the server any new messges in real time 
+so there are not problems with concurrency.
+Rebuttal: Perhaps while the friend is reading from the file the sender is 
+writing to the friend the message and so there is an error OR ALSO while 
+the friend is reading from the file, it is being updated with new messages 
+from the sender so there will be differences in order.
+Answer: Both the sender and the friend will be reading from the file of the 
+chats, so there will have to be a lock for this, one of them will have 
+access to the file first. Then there will not be any conflicts.

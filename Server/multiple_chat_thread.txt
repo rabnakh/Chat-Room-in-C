@@ -1,0 +1,18 @@
+Print all the threads chat groups
+Prompt user for the thread number to join
+Error handle the option that was chosen
+
+
+STORE THE USERS FOR EACH THREAD:
+The threads will each be assigned an index in an array for each thread
+When the user chooses that thread to join then the sockfd struct of the 
+user will also be attached to the thread in a form of a linked list; it 
+will be a linked list of struct.
+
+The problem is that there will be a copy of the structs. Instead perhaps 
+a list of pointers to the structs within the "main" array of all loggedin 
+users? When the user logs out then that struct-pointer is removed from the 
+linked list.
+
+Also, a function to remove the loggedin structs from the arrays and linked 
+lists when the user logs out or when they press CTRL-C
