@@ -197,9 +197,8 @@ int realTimeThreadChat(int sockfd,int chatThreadId){
 		// the client.
 		readMessage(sockfd,mssg,sizeof(mssg));
 		writeMssgAllClients(sockfd,chatThreadID,mssg,sizeof(mssg));
-		printf("%s\n",mssg);
 	}
-	return -1;
+	return 0;
 }
 
 // Removes the user from the chat thread array
@@ -234,6 +233,7 @@ int chatThreadDriver(int sockfd){
 		// Writes the chat threads names to client
 		countNames = writeChatThreadNames(sockfd);
 		err = readChatThreadOption(sockfd,*optionChar);
+		if(err == EXIT_ESC) return EXIT_ESC;
 		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 
 		// Validates the chosen chat thread option from client	
@@ -251,10 +251,12 @@ int chatThreadDriver(int sockfd){
 	// Adds the user to the chat thread array
 	optionInt = convertCharToInt(option);
 	addUserToChatThread(sockfd,optionInt);
-
-	// 1 - writes the chat log to the client
-	// 2 - Initiates the real time chat	
-	// 3 - Removes the user from the chat thread array after ESC
+	
+	// 1 - Generate chat log file
+	// 2 - writes the chat log to the client
+	// 3 - Initiates the real time chat	
+	// 4 - Removes the user from the chat thread array after ESC
+	generateChatLogFile(optionChar,filePath);
 	writeChatThreadLog(sockfd,filePath);
 	err = realTimeThreadChat(sockfd,optionInt);
 	removeUserFromChat(sockfd,optionInt);
@@ -265,54 +267,52 @@ int chatThreadDriver(int sockfd){
 }
 
 // Delete user from txt file givin the numerical line in the file
-void deleteUserAccount(int x){
-	FILE *ptr = fopen("../Database/DATABASE.txt","r");
+void deleteUserAccount(char username[]){
+	FILE *ptr = fopen("../Database/Users_Info/users_creds.txt","r");
 	if(ptr == NULL){
-		printf("DATABASE.txt could not be opened\n");
+		printf("users_cred.txt could not be opened\n");
 		exit(1);
 	}
-	FILE *new_ptr = fopen("../Database/HOLD_DB.txt","a");
+	FILE *new_ptr = fopen("../Database/Users_Info/temp_users.txt","a");
 	if(new_ptr == NULL){
-		printf("HOLD_DB.txt could not be opened\n");
+		printf("temp_users.txt could not be opened\n");
 		exit(1);
 	}
-	int i = 0;
-	char line[256];
-	bzero(line,sizeof(line));
 
-	while(fgets(line,sizeof(line),ptr)){
-		line[strcspn(line,"\n")] = '\0';
-		if(i != x) fprintf(new_ptr,"%s\n",line);
-		i++;
-	}
+	char u_read[256];	
+	char p_read[256];
+	while(fscanf(ptr,"%s %s",u_read,p_read) == 2){
+		if(strcmp(username,u_read) != 0){
+			fprintf(new_ptr,"%s %s\n",u_read,p_read)
+		}
+	}	
+
 	fclose(ptr);
 	fclose(new_ptr);
-	remove("../Database/DATABASE.txt");
-	rename("../Database/HOLD_DB.txt","../Database/DATABASE.txt");
+	remove("../Database/Users_Info/users_creds.txt");
+	rename("../Database/Users_Info/temp_users.txt",
+	"../Database/users_creds.txt");
 }
 
 // Return EXIT_CTRL_C if user pressed Ctrl-C
-int serverInnerMenu(int sockfd,int line){
+int serverInnerMenu(int sockfd,char username){
 	char option;	
 	int err;
 	int logout = 0;
 	int termCode;
 	
 	while(1){
-		option = readUserOption(sockfd);	
+		err = readUserOption(sockfd,*option);	
+		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		if(option == '1'){
 			err = chatThreadDriver(sockfd);
 			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		}
-		else if(option == '2'){
-			// Direct message with friend	
-		}
-		else if(option == '3') return EXIT_CLEAN;
-		else if(option == '4'){
-			deleteUserAccount(line);
+		else if(option == '2') return EXIT_CLEAN;
+		else if(option == '3'){
+			deleteUserAccount(username);
 			return EXIT_CLEAN;
 		}
-		else return EXIT_CTRL_C;
 	}
 	return 0;
 }

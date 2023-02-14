@@ -128,7 +128,7 @@ void bzeroUPM(char username[],char password[],char mssg[]){
 // Returns EXIT_CTRL_C if client pressed Ctrl-C
 // Returns EXIT_ESC if client pressed Esc
 // Returns EXIT_CLEAN if client entered credentials successfully
-int serverCreateNewUser(int sockfd,int *line){
+int serverCreateNewUser(int sockfd){
 	int err;
 	int line = 0;
 	int statusCode = 0;
@@ -151,16 +151,16 @@ int serverCreateNewUser(int sockfd,int *line){
 		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 
 		// Search line of user in database
-		*line = searchUsername(username);	
+		line = searchUsername(username);	
 
 		// Append new profile to database
-		if(*line == -1){
+		if(line == -1){
 			statusCode = 1;
 			appendNewUser(username,password);
 		}
 	
 		// Get err message from table
-		errMssgTableNewUser(*line,mssg);	
+		errMssgTableNewUser(line,mssg);	
 
 		// Write message and status code
 		writeNumMssgChars(sockfd,strlen(mssg));
@@ -170,11 +170,10 @@ int serverCreateNewUser(int sockfd,int *line){
 	return EXIT_CLEAN;
 }
 
-// Logins the client after reading in the username and password
-// Returns the line of the user within the file database
-// If returns -1 then the user ESC
-// If returns -2 then the user CTRL-C
-int serverCurrentUser(int sockfd,int *line){
+// Returns EXIT_CTRL_C if user presses Ctrl-C
+// Returns EXIT_ESC if uses pressed Esc
+// Returns EXIT_CLEAN if users logged in successfully
+int serverCurrentUser(int sockfd,char u_hold[]){
 	int statusCode = 0;
 	int breakCode;
 	char mssg[30];
@@ -202,29 +201,25 @@ int serverCurrentUser(int sockfd,int *line){
 		writeNumMssgChars(sockfd,strlen(mssg));
 		writeMssg(sockfd,mssg,strlen(mssg));	
 		writeStatusCode(sockfd,statusCode);
-		if(statusCode == 2){
-			*line = searchUsername(username);
-		}
 	}
+	strcpy(u_hold,username);
 	return EXIT_CLEAN;
 }
 
 // Returns EXIT_CTRL_C if client pressed Ctrl-C
 // Returns EXIT_CLEAN if client logged successfully
-int serverLoginMenu(int sockfd){
+int serverLoginMenu(int sockfd,char username[]){
 	int err;
-	int line;
-	int newUserCode;
 	char option;
 	while(1){
 		err = readUserOption(sockfd,option);
 		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		if(option == '1'){
-			err = serverCreateNewUser(sockfd,*line);	
+			err = serverCreateNewUser(sockfd);	
 			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		}
 		else if(option == '2'){
-			err = serverCurrentUser(sockfd,*line);
+			err = serverCurrentUser(sockfd,username);
 			if(err == EXIT_CLEAN) return EXIT_CLEAN;
 			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		}

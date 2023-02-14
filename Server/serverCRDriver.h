@@ -11,10 +11,11 @@
 void *serverDriver(void *arg){
 	int err;
 	int sockfd = (long) arg;
+	char username[11];
 	while(1){
 		err = serverLoginMenu(sockfd);
 		if(err == EXIT_CTRL_C) break;
-		err = serverInnerMenu(sock);
+		err = serverInnerMenu(sock,username);
 		if(err == EXIT_CTRL_C) break;
 	}
 	close(sockfd);
