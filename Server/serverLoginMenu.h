@@ -32,15 +32,18 @@ int readLogin(int sockfd,char username[],char password[]){
 	n = read(sockfd,username,11);		
 	if(n == 0){
 		perror("ERROR: Reading from Socket\n");
-		return 1;		
+		return EXIT_CTRL_C;
+		//return 1;		
 	}
 	n = read(sockfd,password,11);
 	if(n == 0){
 		perror("ERROR: Reading from Socket\n");
-		return 1;
+		return EXIT_CTRL_C;
+		//return 1;
 	}	
 	printf("READ LOGIN INFO: %s %s\n",username,password);
-	return 0;
+	return EXIT_CLEAN;
+	//return 0;
 }
 
 // Search full profile with username and password, and returns search code
@@ -58,7 +61,6 @@ int searchFullProfile(char username[],char password[]){
 			else{
 				fclose(ptr);
 				return 1;
-
 			}
 		}
 	}
@@ -95,7 +97,6 @@ void errMssgTableExistingUser(int code,char mssg[]){
 	if(code == 0) strcpy(mssg,"PROFILE NOT EXISTS");
 	else if(code == 1) strcpy(mssg,"INCORRECT PASSWORD");
 	else strcpy(mssg,"SUCCESSFUL LOGIN");
-	printf("%s\n",mssg);
 }
 
 // Write the number of chars in a message
@@ -124,9 +125,11 @@ void bzeroUPM(char username[],char password[],char mssg[]){
 }
 
 // Creates a new user profile
-// Returns 1 is user pressed ctrl-c
-// Returns 0 if user exited normally
-int serverCreateNewUser(int sockfd){
+// Returns EXIT_CTRL_C if client pressed Ctrl-C
+// Returns EXIT_ESC if client pressed Esc
+// Returns EXIT_CLEAN if client entered credentials successfully
+int serverCreateNewUser(int sockfd,int *line){
+	int err;
 	int line = 0;
 	int statusCode = 0;
 	int termCode = 0;;
@@ -139,46 +142,39 @@ int serverCreateNewUser(int sockfd){
 		// bzero() the char arrays
 		bzeroUPM(username,password,mssg);
 	
-		breakCode = breakToLoginMenu(sockfd);
-		if(breakCode == 1) break;
-		if(breakCode == -1){
-			termCode = 1;
-			break;
-		}
+		err = breakCurrentAction(sockfd);
+		if(err == EXIT_ESC) return EXIT_ESC;
+		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 
 		// Read login information
-		breakCode = readLogin(sockfd,username,password);
-		if(breakCode == 1){
-			termCode = 1;
-			break;
-		}
+		err = readLogin(sockfd,username,password);
+		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 
 		// Search line of user in database
-		line = searchUsername(username);	
+		*line = searchUsername(username);	
 
 		// Append new profile to database
-		if(line == -1){
+		if(*line == -1){
 			statusCode = 1;
 			appendNewUser(username,password);
 		}
 	
 		// Get err message from table
-		errMssgTableNewUser(line,mssg);	
+		errMssgTableNewUser(*line,mssg);	
 
 		// Write message and status code
 		writeNumMssgChars(sockfd,strlen(mssg));
 		writeMssg(sockfd,mssg,strlen(mssg));
 		writeStatusCode(sockfd,statusCode);
 	}
-	return termCode;
+	return EXIT_CLEAN;
 }
 
 // Logins the client after reading in the username and password
 // Returns the line of the user within the file database
 // If returns -1 then the user ESC
 // If returns -2 then the user CTRL-C
-int serverCurrentUser(int sockfd){
-	int line = -1;
+int serverCurrentUser(int sockfd,int *line){
 	int statusCode = 0;
 	int breakCode;
 	char mssg[30];
@@ -189,68 +185,51 @@ int serverCurrentUser(int sockfd){
 		// bzero() the char arrays
 		bzeroUPM(username,password,mssg);
 		
-		breakCode = breakToLoginMenu(sockfd);
-		if(breakCode == 1) break;
-		if(breakCode == -1){
-			line = -2;
-			break;
-		}
+		err = breakCurrentAction(sockfd);
+		if(err == EXIT_ESC) return EXIT_ESC;
+		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		
 		// Read login information
 		readLogin(sockfd,username,password);
 		
 		// Search profile in database
-		statusCode = searchFullProfile(username,
-		password);
-		printf("LOGIN CODE: %d\n",statusCode);	
+		statusCode = searchFullProfile(username,password);
 
 		// Get error message
 		errMssgTableExistingUser(statusCode,mssg);
-		printf("MSSG: %s\n",mssg);
 		
 		// Write message and status code
 		writeNumMssgChars(sockfd,strlen(mssg));
 		writeMssg(sockfd,mssg,strlen(mssg));	
 		writeStatusCode(sockfd,statusCode);
 		if(statusCode == 2){
-			line = searchUsername(username);
+			*line = searchUsername(username);
 		}
 	}
-	return line;
+	return EXIT_CLEAN;
 }
 
-// Server Driver function for the initial login menu
-// Returns the line of the user within the file of the server
-// Returns -1 if user CTRL-C
-// Otherwise it returns the line of the logined user
+// Returns EXIT_CTRL_C if client pressed Ctrl-C
+// Returns EXIT_CLEAN if client logged successfully
 int serverLoginMenu(int sockfd){
+	int err;
 	int line;
 	int newUserCode;
 	char option;
 	while(1){
-		option = readUserOption(sockfd);
-		printf("Option: %c\n %d\n",option,option);
-		if(option == '0'){
-			line = -1;
-			break;
-		}
-		
+		err = readUserOption(sockfd,option);
+		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		if(option == '1'){
-			line = serverCreateNewUser(sockfd);	
-			if(line == 1){
-				line = -1;
-			}
+			err = serverCreateNewUser(sockfd,*line);	
+			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		}
 		else if(option == '2'){
-			line = serverCurrentUser(sockfd);
-			if(line > -1) break;
-			if(line == -2){
-				line = -1;
-				break;
-			}
+			err = serverCurrentUser(sockfd,*line);
+			if(err == EXIT_CLEAN) return EXIT_CLEAN;
+			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		}
 	}
-	return line;
+	return EXIT_CLEAN;
 }
 
 #endif

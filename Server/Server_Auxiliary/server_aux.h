@@ -5,34 +5,40 @@
 #include <unistd.h>
 #include "../../Auxiliary/err_handle.h"
 
-// Return 0 if client CTRL-C
-char readUserOption(int sockfd){
+#define EXIT_CLEAN 0
+#define EXIT_ESC 1
+#define EXIT_CTRL_C 2
+
+// Assigns the value of option
+// Returns EXIT_CTRL_C if user pressed Ctrl-C
+// Otherwise it returns EXIT_CLEAN
+int readUserOption(int sockfd,char *option){
 	int n;
-	char option;
-	n = read(sockfd,&option,sizeof(option));
+	n = read(sockfd,option,sizeof(char));
 	if(n == 0){
 		perror("ERROR: Reading from Socket\n");
-		return '0';
+		return EXIT_CTRL_C
 	}
-	return option;
+	return EXIT_CLEAN;
 }
 
-// Return 0 if ENTER pressed, Return 1 if ESC pressed, Return -1 if Ctrl-C
-int breakToLoginMenu(int sockfd){
+// Return EXIT_CLEAN if ENTER pressed
+// Return EXIT_ESC if ESC pressed
+// Return EXIT_CTRL_C if CTRL-C
+int breakCurrentAction(int sockfd){
 	int err;
 	int esc;
 	// Read if user pressed ESC
 	err = read(sockfd,&esc,sizeof(esc));
 	if(err == 1){
 		perror("ERROR: Reading from Socket\n");
-		return -1;
+		return EXIT_CTRL_C;
 	}
-	printf("esc: %d\n",esc);
 	if(esc == 0){
 		printf("RETURN TO LOGIN MENU\n");
-		return 1;
+		return EXIT_ESC;
 	}
-	return 0;
+	return EXIT_CLEAN;
 }
 
 #endif

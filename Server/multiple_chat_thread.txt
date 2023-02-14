@@ -16,3 +16,34 @@ linked list.
 
 Also, a function to remove the loggedin structs from the arrays and linked 
 lists when the user logs out or when they press CTRL-C
+
+Print all the threads chat groups
+Prompt user for the thread number to join
+Error handle the option that was chosen
+Add the socket of the user to the index of the thread in an array of threads
+Store the thread index in which the user is parcipating
+Read from the chat log all the messages
+Print the messages to the terminal of the new user
+When the user enters a message, write the message to the chat log file
+Then print the message to all the sockfds in the thread array
+When the user leaves the chatroom the user sockfd is removed from the 
+linked list.
+Send message to all the chat members in the group that the user left
+When the user joins the chat then a notification of the user joining is 
+sent to all the users
+
+Syncronizing:
+Place a lock for the file chat log for cases when someone is writing to the 
+file when the new user is reading from it to print on their terminal
+
+
+SERVER CODE:
+Read the option sent by the client
+Add the user to the thread index array
+Read from the chat log file
+Send all the lines to the client
+Call the chat group function AND pass the option to the function. That way 
+...the server sends the messages to all the users on that index thread.
+Read for the break code
+If breakcode is valid then remove the user from the thread array AND break 
+out from the loop

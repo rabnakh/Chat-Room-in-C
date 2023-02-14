@@ -60,6 +60,10 @@ void writeRTMssg(void *termMT){
 	*((int *) termMT) = 1;
 }
 
+void getChatThreadOption(int socket){
+	
+
+}
 
 void realTimeChat(/*int sockfd,*/char option){
 	int err;
