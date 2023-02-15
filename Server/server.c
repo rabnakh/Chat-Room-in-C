@@ -12,7 +12,6 @@
 
 int thread_chat_count[6];
 int thread_chat_list[6][10];
-//char chatThreads[6][256];
 
 int main(int argc, char *argv[]){
 	
@@ -49,8 +48,6 @@ int main(int argc, char *argv[]){
 		newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,
 		&clilen);
 		if(newsockfd < 0) error("ERROR: On accept\n");
-		users[usersCount] = newsockfd;
-		usersCount++;
 		pthread_create(&tid,NULL,serverDriver, 
 		(void *)(long) newsockfd);
 	}

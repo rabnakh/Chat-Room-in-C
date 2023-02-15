@@ -17,7 +17,7 @@ int readUserOption(int sockfd,char *option){
 	n = read(sockfd,option,sizeof(char));
 	if(n == 0){
 		perror("ERROR: Reading from Socket\n");
-		return EXIT_CTRL_C
+		return EXIT_CTRL_C;
 	}
 	return EXIT_CLEAN;
 }

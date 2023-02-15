@@ -11,14 +11,15 @@
 #include <pthread.h>
 #include "Server_Auxiliary/server_aux.h"
 
-extern int usersCount;
-extern int users[100];
-extern char chatThreads[6][50];
+extern int thread_chat_count[6];
+extern int thread_chat_list[6][10];
 
 struct userChatThreadInfo{
 	int sockfd;
-	int chatThreadID = -1;
-	int termID = -1;
+	int chatThreadID;
+	//int chatThreadID = -1;
+	int termID;
+	//int termID = -1;
 };
 
 struct chatThreadOption{
@@ -55,11 +56,13 @@ void writeMssgAllClients(int sockfd,int threadID,char mssg[],int size){
 
 // Writes() the names of the threads chat to the client
 int writeChatThreadNames(int sockfd){
-	FILE *ptr = fopen("../Database/Chat_Thread_Names/
-	chat_thread_names.txt");	
+	FILE *ptr = fopen("../Database/Chat_Thread_Names/"
+	"chat_thread_names.txt","r");	
 	char *buffer;
+	int err;
 	int bufferSize;
 	int fileCharLen;
+	int countNames;
 		
 	if(ptr == NULL){
 		error("ERROR: Writing to File\n");
@@ -89,7 +92,7 @@ int writeChatThreadNames(int sockfd){
 
 	for(int i = 0;i < bufferSize;i++){
 		if(buffer[i] == '\n')
-			(*countNames)++;
+			countNames++;
 	}
 	
 	return countNames;
@@ -98,10 +101,11 @@ int writeChatThreadNames(int sockfd){
 // Read() the chat thread option
 // Return EXIT_CTRL_C if user pressed Ctrl-C
 int readChatThreadOption(int sockfd, char *option){
+	int err;
 
 	// Reads the chat thread option from client
-	option = readUserOption(sockfd,option);
-	if(option == EXIT_CTRL_C){
+	err = readUserOption(sockfd,option);
+	if(err == EXIT_CTRL_C){
 		return EXIT_CTRL_C;
 	}
 
@@ -109,7 +113,7 @@ int readChatThreadOption(int sockfd, char *option){
 }
 
 // Converts a given char to its integer equivalant
-int covertCharToInt(char option){
+int convertCharToInt(char option){
 	char optionArr[2];
 	int threadIndex;
 	
@@ -123,13 +127,14 @@ int covertCharToInt(char option){
 // Creates the file path name for the chat log and stores in a sturct
 void generateChatLogFile(char option,char filePath[]){
 	strcat(filePath,"../Thread_Chat_Logs/");
-	strcat(filePath,option);
+	strcat(filePath,&option);
 	strcat(filePath,".txt");
 }
 
 // Appends user to the chat thread array for the chosen chat thread
-void addUserToChatThread(int sockfd,int threadIndex){	
-	thread_chat_list[threadIndex][userCount] = sockfd;
+void addUserToChatThread(int sockfd,int chatThreadIndex){	
+	int count = thread_chat_count[chatThreadIndex];
+	thread_chat_list[chatThreadIndex][count] = sockfd;
 	thread_chat_count[chatThreadIndex]++;
 }
 
@@ -138,11 +143,12 @@ void addUserToChatThread(int sockfd,int threadIndex){
 void writeChatThreadLog(int sockfd,char filePath[]){
 	FILE *ptr;
 	char *buffer;
+	int err;
 	int bufferSize;
 	int fileCharLen;
 
 	// Open the chat log file	
-	ptr = fopen(filePath);
+	ptr = fopen(filePath,"r");
 	if(ptr == NULL){
 		error("Opening File\n");
 	}
@@ -151,7 +157,7 @@ void writeChatThreadLog(int sockfd,char filePath[]){
 	fseek(ptr,0,SEEK_END);
 	fileCharLen = ftell(ptr);
 	rewind(ptr);
-	bufferSize = fileChar * sizeof(char);
+	bufferSize = fileCharLen * sizeof(char);
 	buffer = malloc(bufferSize);
 	if(!buffer){
 		error("Memory not Allocated\n");
@@ -175,7 +181,7 @@ void writeChatThreadLog(int sockfd,char filePath[]){
 
 // Return EXIT_ESC if user pressed ESC
 // Return EXIT_CTRL_C if user pressed Ctrl-C
-int realTimeThreadChat(int sockfd,int chatThreadId){
+int realTimeThreadChat(int sockfd,int chatThreadID){
 	int err;
 	int breakCode;
 	int termCode;
@@ -221,6 +227,7 @@ void removeUserFromChat(int sockfd,int chatThreadIndex){
 int chatThreadDriver(int sockfd){
 	char optionChar;
 	char countNamesChar;
+	char chatGroupsChar;
 	char filePath[50];
 	int err;
 	int countNames;
@@ -232,7 +239,7 @@ int chatThreadDriver(int sockfd){
 
 		// Writes the chat threads names to client
 		countNames = writeChatThreadNames(sockfd);
-		err = readChatThreadOption(sockfd,*optionChar);
+		err = readChatThreadOption(sockfd,&optionChar);
 		if(err == EXIT_ESC) return EXIT_ESC;
 		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 
@@ -249,7 +256,7 @@ int chatThreadDriver(int sockfd){
 	}
 
 	// Adds the user to the chat thread array
-	optionInt = convertCharToInt(option);
+	optionInt = convertCharToInt(optionChar);
 	addUserToChatThread(sockfd,optionInt);
 	
 	// 1 - Generate chat log file
@@ -283,7 +290,7 @@ void deleteUserAccount(char username[]){
 	char p_read[256];
 	while(fscanf(ptr,"%s %s",u_read,p_read) == 2){
 		if(strcmp(username,u_read) != 0){
-			fprintf(new_ptr,"%s %s\n",u_read,p_read)
+			fprintf(new_ptr,"%s %s\n",u_read,p_read);
 		}
 	}	
 
@@ -295,14 +302,14 @@ void deleteUserAccount(char username[]){
 }
 
 // Return EXIT_CTRL_C if user pressed Ctrl-C
-int serverInnerMenu(int sockfd,char username){
+int serverInnerMenu(int sockfd,char username[]){
 	char option;	
 	int err;
 	int logout = 0;
 	int termCode;
 	
 	while(1){
-		err = readUserOption(sockfd,*option);	
+		err = readUserOption(sockfd,&option);	
 		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		if(option == '1'){
 			err = chatThreadDriver(sockfd);

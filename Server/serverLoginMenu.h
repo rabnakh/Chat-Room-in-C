@@ -174,6 +174,7 @@ int serverCreateNewUser(int sockfd){
 // Returns EXIT_ESC if uses pressed Esc
 // Returns EXIT_CLEAN if users logged in successfully
 int serverCurrentUser(int sockfd,char u_hold[]){
+	int err;
 	int statusCode = 0;
 	int breakCode;
 	char mssg[30];
@@ -212,7 +213,7 @@ int serverLoginMenu(int sockfd,char username[]){
 	int err;
 	char option;
 	while(1){
-		err = readUserOption(sockfd,option);
+		err = readUserOption(sockfd,&option);
 		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		if(option == '1'){
 			err = serverCreateNewUser(sockfd);	

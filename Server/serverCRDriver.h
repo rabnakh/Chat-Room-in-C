@@ -13,9 +13,9 @@ void *serverDriver(void *arg){
 	int sockfd = (long) arg;
 	char username[11];
 	while(1){
-		err = serverLoginMenu(sockfd);
+		err = serverLoginMenu(sockfd,username);
 		if(err == EXIT_CTRL_C) break;
-		err = serverInnerMenu(sock,username);
+		err = serverInnerMenu(sockfd,username);
 		if(err == EXIT_CTRL_C) break;
 	}
 	close(sockfd);
