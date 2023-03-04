@@ -5,9 +5,10 @@
 #include "clientLoginMenu.h"
 #include "clientInnerMenu.h"
 
-int terminate;
+/*
 extern int sockfd;
 extern struct termios initial;
+*/
 
 void signal_callback_handler(int signum){
 	system("clear");
@@ -17,11 +18,11 @@ void signal_callback_handler(int signum){
 	exit(signum);
 }
 
-void client_driver(/*int sockfd*/){
+void client_driver(){
 	signal(SIGINT,signal_callback_handler);
-	while(!terminate){
-		clientLoginMenu(/*sockfd*/);
-		clientInnerMenu(/*sockfd*/);
+	while(1){
+		clientLoginMenu();
+		clientInnerMenu();
 	}
 }
 

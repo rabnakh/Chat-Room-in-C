@@ -11,15 +11,13 @@
 #include <pthread.h>
 #include "Server_Auxiliary/server_aux.h"
 
-extern int thread_chat_count[6];
-extern int thread_chat_list[6][10];
+extern int thread_chat_count[8];
+extern int thread_chat_list[8][10];
 
 struct userChatThreadInfo{
 	int sockfd;
 	int chatThreadID;
-	//int chatThreadID = -1;
 	int termID;
-	//int termID = -1;
 };
 
 struct chatThreadOption{
@@ -44,15 +42,29 @@ int readMessage(int sockfd,char mssg[],int size){
 void writeMssgAllClients(int sockfd,int threadID,char mssg[],int size){
 	int n;
 	int chatThreadSockfd;
-	for(int i = 0;i < thread_chat_count[threadID];i++){
+	int count = thread_chat_count[threadID];
+	int breakClientRead = 0;
+	for(int i = 0;i < count;i++){
 		chatThreadSockfd = thread_chat_list[threadID][i];
 		if(chatThreadSockfd != sockfd){
-			n = write(sockfd,mssg,size);
+			// Write that the client read() wont break loop
+			n = write(chatThreadSockfd,&breakClientRead,
+			sizeof(int));
+			if(n < 0) error("ERROR: Writing to Socket\n");
+
+			// Write the message to the client
+			n = write(chatThreadSockfd,mssg,size);
 			if(n < 0) error("ERROR: Writing to Socket\n");
 		}
 	}
 }
 
+void writeMssgToChatLog(char filePath[],char mssg[]){
+	FILE *ptr = fopen(filePath,"a");
+	if(ptr == NULL) error("File count not be opened\n");	
+	fprintf(ptr,"%s\n",mssg);
+	fclose(ptr);
+}
 
 // Writes() the names of the threads chat to the client
 int writeChatThreadNames(int sockfd){
@@ -62,8 +74,8 @@ int writeChatThreadNames(int sockfd){
 	int err;
 	int bufferSize;
 	int fileCharLen;
-	int countNames;
-		
+	int countNames = 0;
+
 	if(ptr == NULL){
 		error("ERROR: Writing to File\n");
 	}
@@ -78,13 +90,13 @@ int writeChatThreadNames(int sockfd){
 	}
 	fread(buffer,fileCharLen,1,ptr);
 	fclose(ptr);
-	free(buffer);
+
 
 	err = write(sockfd,&bufferSize,sizeof(bufferSize));
 	if(err < 0){
 		error("Writing to Socket\n");
 	}
-	
+
 	err = write(sockfd,buffer,bufferSize);
 	if(err < 0){
 		error("Writing to Socket\n");
@@ -94,7 +106,7 @@ int writeChatThreadNames(int sockfd){
 		if(buffer[i] == '\n')
 			countNames++;
 	}
-	
+	free(buffer);
 	return countNames;
 }
 
@@ -125,8 +137,8 @@ int convertCharToInt(char option){
 }
 
 // Creates the file path name for the chat log and stores in a sturct
-void generateChatLogFile(char option,char filePath[]){
-	strcat(filePath,"../Thread_Chat_Logs/");
+void generateChatLogFilePath(char option,char filePath[]){
+	strcat(filePath,"../Database/Thread_Chat_Logs/thread_");
 	strcat(filePath,&option);
 	strcat(filePath,".txt");
 }
@@ -171,38 +183,55 @@ void writeChatThreadLog(int sockfd,char filePath[]){
 		error("Writing to Socket\n");
 	}
 
-	// Write the chat log file contents to the file
-	err = write(sockfd,buffer,bufferSize);
-	if(err < 0){
-		error("Writing to Socket\n");
+	/*
+	This if-statement was added because if the chat log is empty, then 
+	zero bytes will be read() by the client. Then that is the same as 
+	if the server pressed CTRL-C and so the error handling for that 
+	in the client will execute. So, to avoid that, the client and the 
+	server will only read() and write() when the bytes within the 
+	chat log is greater than 0.
+	*/
+	if(bufferSize > 0){
+		// Write the chat log file contents to the file
+		err = write(sockfd,buffer,bufferSize);
+		if(err < 0){
+			error("Writing to Socket\n");
+		}
+		free(buffer);
+		buffer = NULL;
 	}
-	free(buffer);
 }
 
 // Return EXIT_ESC if user pressed ESC
 // Return EXIT_CTRL_C if user pressed Ctrl-C
-int realTimeThreadChat(int sockfd,int chatThreadID){
+int realTimeThreadChat(int sockfd,int chatThreadID,char filePath[]){
 	int err;
 	int breakCode;
 	int termCode;
+	int breakClientRead = 0;
 	char mssg[256];	
 	while(1){
 
 		// Break if client pressed ESC
 		breakCode = breakCurrentAction(sockfd);
 		if(breakCode == EXIT_ESC){
+			breakClientRead = 1;
+			err = write(sockfd,&breakClientRead,sizeof(int));
+			if(err < 0) error("CANNOT WRITE TO CLIENT\n");
+			printf("BREAK WITH EXIT_ESC FROM RTC\n");
 			return EXIT_ESC;
 		}
 		
 		// Break if client pressed CTRL-C
 		if(breakCode == EXIT_CTRL_C){
+			printf("BREAK WITH EXIT_CTRL_C FROM RTC\n");
 			return EXIT_CTRL_C;
 		}
 
-		// read() and write() the message from the client back to 
-		// the client.
-		readMessage(sockfd,mssg,sizeof(mssg));
+		err = readMessage(sockfd,mssg,sizeof(mssg));
+		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		writeMssgAllClients(sockfd,chatThreadID,mssg,sizeof(mssg));
+		writeMssgToChatLog(filePath,mssg);
 	}
 	return 0;
 }
@@ -222,60 +251,104 @@ void removeUserFromChat(int sockfd,int chatThreadIndex){
 		thread_chat_list[chatThreadIndex][i] = next;
 	}
 	thread_chat_count[chatThreadIndex]--;
+	count = thread_chat_count[chatThreadIndex];
 }
 
 int chatThreadDriver(int sockfd){
 	char optionChar;
 	char countNamesChar;
-	char chatGroupsChar;
-	char filePath[50];
+	char filePath[41];
 	int err;
 	int countNames;
 	int optionInt;
-	int validOption = 0;
+	int validOption;
+	int inputExitCode;
 
-	// Iterate while the option chosesn is not valid
-	while(!validOption){
+	while(1){
+		validOption = 0;
+		memset(filePath,0,sizeof(filePath));
+		err = 0;
+		optionChar = 0;
+		// Iterate while the option chosesn is not valid
+		while(!validOption){
 
-		// Writes the chat threads names to client
-		countNames = writeChatThreadNames(sockfd);
-		err = readChatThreadOption(sockfd,&optionChar);
-		if(err == EXIT_ESC) return EXIT_ESC;
-		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
+			// Writes the chat threads names to client
+			countNames = writeChatThreadNames(sockfd);
 
-		// Validates the chosen chat thread option from client	
-		chatGroupsChar = countNames + '\0';
-		if('1' <= optionChar && optionChar <= countNamesChar){
-			validOption = 1;	
-		}
-		else{
-			// Write error message if invalid
-			err = write(sockfd,"Invalid Option",sizeof(14));
+			// Read the input break code
+			err = read(sockfd,&inputExitCode,
+			sizeof(inputExitCode));
+			if(err == 0) return EXIT_CTRL_C;
+			if(inputExitCode == EXIT_ESC){
+				printf("BREAK WITH EXIT_ESC FROM CTD\n");
+				return EXIT_ESC;
+			}
+			
+			// Read the chat thread group option
+			err = readChatThreadOption(sockfd,&optionChar);
+			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
+
+			// Validates the chosen chat thread option 
+			// from client	
+			countNamesChar = countNames + '0';
+			if('1' <= optionChar && optionChar 
+			<= countNamesChar){
+				validOption = 1;	
+			}
+		
+			// Write valid option status
+			err = write(sockfd,&validOption,sizeof(int));
 			if(err < 0) error("Writing to Socket\n");
+			/*
+			else{
+				// Write error message if invalid
+				err = write(sockfd,"Invalid Option",
+				sizeof(14));
+				if(err < 0) error("Writing to Socket\n");
+			}
+			*/
 		}
-	}
 
-	// Adds the user to the chat thread array
-	optionInt = convertCharToInt(optionChar);
-	addUserToChatThread(sockfd,optionInt);
-	
-	// 1 - Generate chat log file
-	// 2 - writes the chat log to the client
-	// 3 - Initiates the real time chat	
-	// 4 - Removes the user from the chat thread array after ESC
-	generateChatLogFile(optionChar,filePath);
-	writeChatThreadLog(sockfd,filePath);
-	err = realTimeThreadChat(sockfd,optionInt);
-	removeUserFromChat(sockfd,optionInt);
-	
-	if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
-	if(err == EXIT_ESC) return EXIT_ESC;
-	return EXIT_CLEAN;
+		// Adds the user to the chat thread array
+		optionInt = convertCharToInt(optionChar);
+		addUserToChatThread(sockfd,optionInt);
+		
+		// 1 - Generate chat log file
+		// 2 - writes the chat log to the client
+		// 3 - Initiates the real time chat	
+		// 4 - Removes the user from the chat thread array after ESC
+		generateChatLogFilePath(optionChar,filePath);
+		writeChatThreadLog(sockfd,filePath);
+		err = realTimeThreadChat(sockfd,optionInt,filePath);
+		removeUserFromChat(sockfd,optionInt);
+		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
+	}
+	return 0;
+}
+
+int readBooleanOption(int sockfd,int *booleanOption){
+	int err;
+	int inputExitCode = 0; 
+	while(1){
+		// Read to see if user pressed ESC
+		err = read(sockfd,&inputExitCode,sizeof(inputExitCode));
+		if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
+		if(inputExitCode == EXIT_ESC){
+			printf("BREAK WITH EXIT_ESC FROM RBC\n");
+			return EXIT_ESC;
+		}
+		// Read the user input boolean option
+		err = read(sockfd,booleanOption,sizeof(int));
+		if(err == 0) return EXIT_CTRL_C;
+		if(*booleanOption == 0 || *booleanOption == 1)
+			return EXIT_CLEAN;
+	}
+	return -1;
 }
 
 // Delete user from txt file givin the numerical line in the file
-void deleteUserAccount(char username[]){
-	FILE *ptr = fopen("../Database/Users_Info/users_creds.txt","r");
+void deleteUserLineFromFile(char username[]){
+	FILE *ptr = fopen("../Database/Users_Info/users_cred.txt","r");
 	if(ptr == NULL){
 		printf("users_cred.txt could not be opened\n");
 		exit(1);
@@ -296,9 +369,23 @@ void deleteUserAccount(char username[]){
 
 	fclose(ptr);
 	fclose(new_ptr);
-	remove("../Database/Users_Info/users_creds.txt");
+	remove("../Database/Users_Info/users_cred.txt");
 	rename("../Database/Users_Info/temp_users.txt",
-	"../Database/users_creds.txt");
+	"../Database/Users_Info/users_cred.txt");
+}
+
+int logoutUserAccount(int sockfd,int *booleanOption){
+	int err;
+	err = readBooleanOption(sockfd,booleanOption);
+	return err;
+}
+
+int deleteUserAccount(int sockfd,int *booleanOption,char username[]){
+	int err;
+	err = readBooleanOption(sockfd,booleanOption);	
+	if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
+	if(*booleanOption == 1) deleteUserLineFromFile(username);
+	return err;
 }
 
 // Return EXIT_CTRL_C if user pressed Ctrl-C
@@ -315,10 +402,24 @@ int serverInnerMenu(int sockfd,char username[]){
 			err = chatThreadDriver(sockfd);
 			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
 		}
-		else if(option == '2') return EXIT_CLEAN;
+		else if(option == '2'){
+			int booleanOption = 0;
+			err = logoutUserAccount(sockfd,&booleanOption);
+			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
+			if(booleanOption == 1){
+				printf("BREAKING FROM INNERMENU\n");
+				break;
+			}
+		}
 		else if(option == '3'){
-			deleteUserAccount(username);
-			return EXIT_CLEAN;
+			int booleanOption = 0;
+			err = deleteUserAccount(sockfd,&booleanOption,
+			username);
+			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
+			if(booleanOption == 1){
+				printf("BREAKING FROM INNERMENU\n");
+				break;
+			}
 		}
 	}
 	return 0;

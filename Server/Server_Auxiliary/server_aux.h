@@ -13,9 +13,11 @@
 // Returns EXIT_CTRL_C if user pressed Ctrl-C
 // Otherwise it returns EXIT_CLEAN
 int readUserOption(int sockfd,char *option){
-	int n;
-	n = read(sockfd,option,sizeof(char));
-	if(n == 0){
+	int err;
+	err = read(sockfd,option,sizeof(char));
+	printf("err: %d\n",err);
+	printf("option: %c\n",*option);
+	if(err == 0){
 		perror("ERROR: Reading from Socket\n");
 		return EXIT_CTRL_C;
 	}
@@ -30,11 +32,11 @@ int breakCurrentAction(int sockfd){
 	int esc;
 	// Read if user pressed ESC
 	err = read(sockfd,&esc,sizeof(esc));
-	if(err == 1){
+	if(err == 0){
 		perror("ERROR: Reading from Socket\n");
 		return EXIT_CTRL_C;
 	}
-	if(esc == 0){
+	if(esc == 1){
 		printf("RETURN TO LOGIN MENU\n");
 		return EXIT_ESC;
 	}

@@ -10,8 +10,8 @@
 #include <pthread.h>
 #include "serverCRDriver.h"
 
-int thread_chat_count[6];
-int thread_chat_list[6][10];
+int thread_chat_count[8];
+int thread_chat_list[8][10];
 
 int main(int argc, char *argv[]){
 	

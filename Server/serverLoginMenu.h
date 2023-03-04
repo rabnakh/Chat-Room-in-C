@@ -1,6 +1,10 @@
 #ifndef LOGIN_MENU_SERVER_H
 #define LOGIN_MENU_SERVER_H
 
+#define EXIT_CLEAN 0
+#define EXIT_ESC 1
+#define EXIT_CTRL_C 2
+
 #include <stdio.h>
 #include <stdlib.h> // exit()
 #include <sys/types.h>
@@ -16,7 +20,7 @@
 
 // Append new new to txt file
 void appendNewUser(char username[],char password[]){
-	FILE *ptr = fopen("../Database/DATABASE.txt","a");
+	FILE *ptr = fopen("../Database/Users_Info/users_cred.txt","a");
 	if(ptr == NULL){
 		error("File could not be opened\n");
 	}
@@ -33,23 +37,24 @@ int readLogin(int sockfd,char username[],char password[]){
 	if(n == 0){
 		perror("ERROR: Reading from Socket\n");
 		return EXIT_CTRL_C;
-		//return 1;		
 	}
 	n = read(sockfd,password,11);
 	if(n == 0){
 		perror("ERROR: Reading from Socket\n");
 		return EXIT_CTRL_C;
-		//return 1;
 	}	
 	printf("READ LOGIN INFO: %s %s\n",username,password);
 	return EXIT_CLEAN;
-	//return 0;
 }
 
 // Search full profile with username and password, and returns search code
 // Return 2 if found,1 if password incorrect, and 0 for not found
 int searchFullProfile(char username[],char password[]){
-	FILE *ptr = fopen("../Database/DATABASE.txt","r");
+	FILE *ptr = fopen("../Database/Users_Info/users_cred.txt","r");
+	if(ptr == NULL){
+		error("Cannot open file\n");
+		exit(1);
+	}
 	char dbu[11];
 	char dbp[11];
 	while(fscanf(ptr,"%s %s",dbu,dbp) == 2){
@@ -71,10 +76,13 @@ int searchFullProfile(char username[],char password[]){
 // Return -1 if username not found
 // Return line index where the username was found
 int searchUsername(char username[]){
-	FILE *ptr = fopen("../Database/DATABASE.txt","r");
+	FILE *ptr = fopen("../Database/Users_Info/users_cred.txt","r");
 	char u_n[256];
 	bzero(u_n,sizeof(u_n));
-
+	if(ptr == NULL){
+		error("FILE NOT OPENED\n");
+		exit(1);
+	}
 	int i = 0;
 	while(fscanf(ptr,"%s%*[^\n]",u_n) == 1){
 		if(strcmp(username,u_n) == 0)
@@ -152,7 +160,7 @@ int serverCreateNewUser(int sockfd){
 
 		// Search line of user in database
 		line = searchUsername(username);	
-
+		printf("after searchUsername()\n");
 		// Append new profile to database
 		if(line == -1){
 			statusCode = 1;
@@ -162,6 +170,8 @@ int serverCreateNewUser(int sockfd){
 		// Get err message from table
 		errMssgTableNewUser(line,mssg);	
 
+		printf("statusCode: %d\n",statusCode);
+		printf("numMssgChars: %ld\n",strlen(mssg));
 		// Write message and status code
 		writeNumMssgChars(sockfd,strlen(mssg));
 		writeMssg(sockfd,mssg,strlen(mssg));

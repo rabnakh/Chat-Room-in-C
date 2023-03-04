@@ -5,13 +5,13 @@
 extern struct termios initial;
 
 // Only allows a single character to be inputed into the buffer
-char getSingleChar(){
-	char option;
+// Return EXIT_CLEAN if user pressed ENTER and return EXIT_ESC if user 
+// pressed ESC
+char getSingleChar(char *option,int exitEsc){
 	char buffer;
-	//struct termios old;
 	struct termios new;
+	int exit_code = 0;
 
-	//tcgetattr(STDIN_FILENO,&old);
 	new = initial;
 	new.c_lflag &= ~ICANON;
 	new.c_lflag &= ~ECHO;
@@ -20,28 +20,35 @@ char getSingleChar(){
 	int i = 0;
 	while(1){
 		buffer = getchar();	
-		if(i > 0 && buffer == '\n')
+		if(buffer == 27 && exitEsc == 1){
+			exit_code = EXIT_ESC;
+			*option = '\0';
 			break;
+		}
+		if(i > 0 && buffer == '\n'){
+			exit_code = EXIT_CLEAN;
+			break;
+		}
 		if(i > 0 && (buffer == 127)){
 			printf("\b \b");
-			option = '\0';
+			*option = '\0';
 			i--;
 		}
 		else if(i < 1 && ((47 < buffer && buffer < 58) || 
 		(64 < buffer && buffer< 91) || (96 < buffer && 
 		buffer < 123))){
-			option = buffer;	
+			*option = buffer;	
 			i++;
-			printf("%c",option);
+			printf("%c",*option);
 		}
 	}
 
 	tcsetattr(STDIN_FILENO,TCSANOW,&initial);
 
-	return option;
+	return exit_code;
 }
 
-// Returns 0 if exit with escape and returns 1 if exit with newline
+// Returns 0 if exit with NEWLINE and returns 1 if exit with ESC
 int getString(char string[],int size,int noEcho,int extra){
 	char c;
 	//struct termios old;
@@ -58,12 +65,9 @@ int getString(char string[],int size,int noEcho,int extra){
 	int exitInput = 0;
 	while(1){
 		c = getchar();		
-		if(c == '\n' && i > 0){
-			exitInput = 1;
-			break;
-		}
+		if(c == '\n' && i > 0) break;
 		if(c == 27){
-			exitInput = 0;
+			exitInput = 1;
 			break;
 		}
 		if(i > 0 && (c == 127)){
