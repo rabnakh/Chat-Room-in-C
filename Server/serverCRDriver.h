@@ -1,32 +1,23 @@
 #ifndef SERVER_DRIVER_H
 #define SERVER_DRIVER_H
 
+#define EXIT_CLEAN 0
+#define EXIT_ESC 1
+#define EXIT_CTRL_C 2
+
 #include "serverLoginMenu.h"
 #include "serverInnerMenu.h"
 
-void removeClientSocket(int sockfd){
-	int clientIndex = 0;
-	while(users[clientIndex] != sockfd){
-		clientIndex++;
-	}
-	while(clientIndex < usersCount){
-		users[clientIndex] = users[clientIndex + 1];
-		clientIndex++;
-	}
-	usersCount--;
-}
-
 void *serverDriver(void *arg){
+	int err;
 	int sockfd = (long) arg;
-	int userLine;
-	int termCode;
+	char username[11];
 	while(1){
-		userLine = serverLoginMenu(sockfd);
-		if(userLine == -1) break;
-		termCode = serverInnerMenu(sockfd,userLine);
-		if(termCode == 1) break;
+		err = serverLoginMenu(sockfd,username);
+		if(err == EXIT_CTRL_C) break;
+		err = serverInnerMenu(sockfd,username);
+		if(err == EXIT_CTRL_C) break;
 	}
-	removeClientSocket(sockfd);
 	close(sockfd);
 }
 
