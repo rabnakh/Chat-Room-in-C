@@ -22,18 +22,33 @@ int getInnerMenuOption(char *option){
 	return err;
 }
 
+void printChatThreadNames(char *buffer,int bufferSize){
+	int printNewLine = 1;
+	int newLineCount = 1;
+	printf("***CHAT THREADS***\n");
+	for(int i = 0;i < bufferSize;i++){
+		if(printNewLine == 1 && buffer[i] != '\n')
+			printf("%d - ",newLineCount);
+		putchar(buffer[i]);
+		if(buffer[i] == '\n'){
+			newLineCount++;
+			printNewLine = 1;
+		}
+		else printNewLine = 0;
+	}
+}
+
 // Reads the chat thread names from the server and prints them
-int readChatThreadNames(char **buffer){
+int readChatThreadNames(char **buffer,int *bufferSize){
 	int err = 0;
-	int bufferSize = 0;
 
 	// Read the size of the content	
-	err = read(sockfd,&bufferSize,sizeof(bufferSize));
+	err = read(sockfd,bufferSize,sizeof(int));
 	if(err == 0) return EXIT_CTRL_C;
 
 	// Read the content material	
-	*buffer = (char *)malloc(bufferSize);	
-	err = read(sockfd,*buffer,bufferSize);
+	*buffer = (char *)malloc(*bufferSize);	
+	err = read(sockfd,*buffer,*bufferSize);
 	if(err == 0) return EXIT_CTRL_C;
 
 	return EXIT_CLEAN;
@@ -126,18 +141,21 @@ int chatThreadDriver(){
 	int err;
 	int exitInputCode;
 	int validOption;
+	int bufferSize;
 	char *buffer;
 	char option;
 
 	while(1){
 		validOption = 0;
+		bufferSize = 0;
 		buffer = NULL;
 		while(!validOption){
 
 			// Read the names of the chat threads
-			err = readChatThreadNames(&buffer);
+			err = readChatThreadNames(&buffer,&bufferSize);
 			if(err == EXIT_CTRL_C) return EXIT_CTRL_C;
-			if(buffer != NULL) printf("%s\n",buffer);
+			if(buffer != NULL)
+				printChatThreadNames(buffer,bufferSize);
 
 			// Get and Write the chat thread option
 			// to the server
