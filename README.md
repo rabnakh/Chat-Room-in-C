@@ -25,12 +25,14 @@ Execute the following command to run the server:
 computer*)
 
 ```
+gcc server.c -o server
 ./server {port number}
 ```
 
 ## Running the Client
 Execute the following command to run a client:
 ```
+gcc client.c -o client
 ./client localhost {server port number}
 ```
 
