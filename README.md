@@ -37,6 +37,6 @@ Execute the following command to run a client:
 ## How to use the Client:
 * Create an account
 * Login using created username and password
-* Enter a single character option to move within the menus
-  **Press ESC to return to the previous menu or to exit the chat thread**
+* Enter a single character option to move within the menus\
+**Press ESC to return to the previous menu or to exit the chat thread**
 
