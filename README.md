@@ -8,12 +8,16 @@ that particular subject.
 ## Getting Started
 
 ### Prerequisites
-First the database for the server needs to be created.
+1. First the database for the server needs to be created.
 Run the following bash script within the directory holding the server 
 and client code:
 ```
 bash createDatabase.sh
 ```
+2. Write eight chat group names in the following file:
+```Database/Chat_Thread_Names/chat_thread_names.txt```
+(*Note: Currently the server is not dynamic and can only hold eight chat 
+groups*)
 
 ## Running the Server
 Execute the following command to run the server:
@@ -34,4 +38,5 @@ Execute the following command to run a client:
 * Create an account
 * Login using created username and password
 * Enter a single character option to move within the menus
-**Press ESC to return to the previous menu or to exit the chat thread**
+  **Press ESC to return to the previous menu or to exit the chat thread**
+
