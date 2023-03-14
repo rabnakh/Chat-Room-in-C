@@ -27,7 +27,7 @@ void printChatThreadNames(char *buffer,int bufferSize){
 	int newLineCount = 1;
 	printf("***CHAT THREADS***\n");
 	for(int i = 0;i < bufferSize;i++){
-		if(printNewLine == 1 && buffer[i] != '\n')
+		if(printNewLine == 1)
 			printf("%d - ",newLineCount);
 		putchar(buffer[i]);
 		if(buffer[i] == '\n'){
