@@ -1,4 +1,4 @@
-# Chat Room in C
+# Multiple Chat Rooms in C
 
 This is a Chat Room application writtin as a client-server socket model.
 Users create their own account and are then given the option to choose 
