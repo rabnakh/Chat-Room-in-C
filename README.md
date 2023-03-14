@@ -11,18 +11,27 @@ that particular subject.
 First the database for the server needs to be created.
 Run the following bash script within the directory holding the server 
 and client code:
-$ bash createDatabase.sh
+```
+bash createDatabase.sh
+```
 
 ## Running the Server
 Execute the following command to run the server:
-$./server {port number}
+(*NOTE: The application currently can only function within the same 
+computer*)
+
+```
+./server {port number}
+```
 
 ## Running the Client
 Execute the following command to run a client:
-$ ./client localhost {server port number}
+```
+./client localhost {server port number}
+```
 
 ## How to use the Client:
 * Create an account
 * Login using created username and password
 * Enter a single character option to move within the menus
-* Press ESC to return to the previous menu or to exit the chat thread
+**Press ESC to return to the previous menu or to exit the chat thread**
